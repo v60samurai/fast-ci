@@ -1,0 +1,1 @@
+- CI and pre-push hooks follow the `fast-ci` skill. When the pre-push hook fails, fix the cause and push again; never pass `--no-verify`.

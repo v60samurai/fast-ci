@@ -1,0 +1,226 @@
+# >>> template
+# setup.sh renders this file: it fills the double-underscore placeholders, keeps only the
+# marked blocks this repo needs, and drops this one.
+# <<< template
+# fast-ci baseline (see the fast-ci skill). Every job runs in parallel; a PR takes as long as the slowest one.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * *" # nightly full test run on main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # GitHub scopes PR caches to their branch, so PRs only hit a cache that main saved.
+  seed-cache:
+    if: github.event_name == 'push'
+    runs-on: &runner ubuntu-latest
+    # runs-on: &runner blacksmith-4vcpu-ubuntu-2204 # paid runner: Harshit's call
+    steps:
+      - &checkout
+        uses: actions/checkout@v5
+        with:
+          filter: blob:none # full history, file contents on demand; a shallow clone breaks git history reads
+          fetch-depth: 0
+      # >>> js
+      # >>> bun
+      - &setup-js
+        uses: oven-sh/setup-bun@v2
+      # <<< bun
+      # >>> node
+      - &setup-js
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+      - &corepack
+        run: corepack enable
+      # <<< node
+      - &deps-cache
+        id: deps
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          # TODO(fast-ci): cache key. Add every other input that changes node_modules (runtime version, patches/).
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 'bun.lockb', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock') }}
+      - &install
+        if: steps.deps.outputs.cache-hit != 'true'
+        run: __INSTALL__
+      # <<< js
+      # >>> py
+      - &setup-uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync
+      # <<< py
+
+  # >>> js
+  lint:
+    if: github.event_name != 'push'
+    runs-on: *runner
+    steps:
+      - *checkout
+      - *setup-js
+      # >>> node
+      - *corepack
+      # <<< node
+      - *deps-cache
+      - *install
+      - run: __EXEC__ oxlint
+      - run: __EXEC__ oxfmt --check
+  # <<< js
+
+  # >>> ts
+  typecheck:
+    if: github.event_name != 'push'
+    runs-on: *runner
+    steps:
+      - *checkout
+      - *setup-js
+      # >>> node
+      - *corepack
+      # <<< node
+      - *deps-cache
+      - *install
+      - run: __RUN__ typecheck
+  # <<< ts
+
+  # >>> build
+  build:
+    if: github.event_name != 'push'
+    runs-on: *runner
+    steps:
+      - *checkout
+      - *setup-js
+      # >>> node
+      - *corepack
+      # <<< node
+      - *deps-cache
+      - *install
+      - run: __RUN__ build
+  # <<< build
+
+  # >>> vitest
+  test:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    # runs-on: blacksmith-8vcpu-ubuntu-2204 # bigger machines beat more shards; paid: Harshit's call
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4] # TODO(fast-ci): shard count, from measured runs
+    steps:
+      - *checkout
+      - *setup-js
+      # >>> node
+      - *corepack
+      # <<< node
+      - *deps-cache
+      - *install
+      - name: Test (affected on PRs, everything nightly)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          SHARD: ${{ matrix.shard }}
+          TOTAL: ${{ strategy.job-total }}
+        run: |
+          changed=$( [ -n "$BASE" ] && git diff --name-only "$BASE" HEAD || true )
+          # Inputs the module graph cannot see force a full run.
+          # TODO(fast-ci): add this repo's other global inputs (env files, fixtures, codegen sources).
+          if [ -z "$BASE" ] || grep -qE '(^|/)(package\.json|bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|tsconfig[^/]*\.json|vite(st)?\.[^/]*)$|^\.github/' <<<"$changed"; then
+            scope=""
+          else
+            scope="--changed=$BASE"
+          fi
+          code=$(grep -cE '\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|vue|svelte)$' <<<"$changed" || true)
+          # TODO(fast-ci): --maxWorkers, matched to the runner's cores.
+          __EXEC__ vitest run ${scope:+"$scope"} --shard="$SHARD/$TOTAL" --maxWorkers=2 --passWithNoTests \
+            --reporter=default --reporter=json --outputFile.json=vitest-report.json
+          ran=$(jq '.numTotalTests // 0' vitest-report.json 2>/dev/null || echo 0)
+          echo "$ran $code" > "tests-$SHARD.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tests-${{ matrix.shard }}
+          path: tests-${{ matrix.shard }}.txt
+  # <<< vitest
+
+  # >>> py
+  py-lint:
+    if: github.event_name != 'push'
+    runs-on: *runner
+    steps:
+      - *checkout
+      - *setup-uv
+      - run: uvx ruff check .
+      - run: uvx ruff format --check .
+
+  py-typecheck:
+    if: github.event_name != 'push'
+    runs-on: *runner
+    steps:
+      - *checkout
+      - *setup-uv
+      - run: uv sync
+      - run: uvx ty check
+
+  py-test:
+    if: github.event_name != 'push'
+    runs-on: *runner
+    steps:
+      - *checkout
+      - *setup-uv
+      - run: uv sync
+      # shortcut: runs every test; add affected selection (pytest-testmon) once this job is the slowest.
+      # TODO(fast-ci): pytest-xdist `-n`, matched to the runner's cores.
+      - run: uv run pytest
+  # <<< py
+
+  # The one required check. It fails on any failed job, and on a code change that ran no tests.
+  ci-ok:
+    if: always()
+    needs:
+      # >>> js
+      - lint
+      # <<< js
+      # >>> ts
+      - typecheck
+      # <<< ts
+      # >>> build
+      - build
+      # <<< build
+      # >>> vitest
+      - test
+      # <<< vitest
+      # >>> py
+      - py-lint
+      - py-typecheck
+      - py-test
+      # <<< py
+    runs-on: *runner
+    steps:
+      - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+      # >>> vitest
+      - if: needs.test.result == 'success'
+        uses: actions/download-artifact@v5
+        with:
+          pattern: tests-*
+          merge-multiple: true
+      - name: Fail when a code change ran no tests
+        if: needs.test.result == 'success'
+        run: |
+          read -r ran code < <(cat tests-*.txt | awk '{r+=$1; c+=$2} END {print r+0, c+0}')
+          if [ "$code" -gt 0 ] && [ "$ran" -eq 0 ]; then
+            echo "::error::$code code files changed and no test ran. Affected-test selection missed this change: add its input to the full-run list in the test job."
+            exit 1
+          fi
+      # <<< vitest

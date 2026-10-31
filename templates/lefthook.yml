@@ -1,0 +1,32 @@
+# >>> template
+# setup.sh renders this file like templates/ci.yml.
+# <<< template
+# fast-ci pre-push: format, lint and typecheck the files being pushed, in under 10 s.
+# A command runs only when the push touches its glob.
+pre-push:
+  parallel: true
+  commands:
+    # >>> js
+    format:
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+      run: __EXEC__ oxfmt --check {push_files}
+    lint:
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+      run: __EXEC__ oxlint {push_files}
+    # <<< js
+    # >>> ts
+    typecheck:
+      glob: "*.{ts,tsx,mts,cts}"
+      run: __RUN__ typecheck # whole project, because types cross files
+    # <<< ts
+    # >>> py
+    py-format:
+      glob: "*.py"
+      run: uvx ruff format --check {push_files}
+    py-lint:
+      glob: "*.py"
+      run: uvx ruff check {push_files}
+    py-typecheck:
+      glob: "*.py"
+      run: uvx ty check {push_files}
+    # <<< py

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320">
+<defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+<rect width="8" height="8" fill="#20252E"/><line x1="0" y1="0" x2="0" y2="8" stroke="#3A414D" stroke-width="3"/></pattern></defs>
+<rect width="1280" height="320" fill="#0B0D12"/>
+<text x="60" y="168" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="104" font-weight="800" letter-spacing="-3.1" fill="#F0F3F6">fast<tspan fill="#3FB950">-</tspan>ci</text>
+<text x="64" y="220" font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="26" font-weight="500" fill="#8B949E"><tspan font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace">40 min</tspan> CI → <tspan font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" fill="#3FB950" font-weight="700">2 min</tspan>. By default.</text>
+<text x="640" y="116.04" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="14" fill="#8B949E">before</text>
+<rect x="720.0" y="96" width="123.4" height="30" fill="url(#hatch)"/>
+<text x="730.0" y="116.04" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="14" fill="#C9D1D9">queue</text>
+<rect x="845.4" y="96" width="83.5" height="30" fill="#2B313C"/>
+<text x="855.4" y="116.04" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="14" fill="#C9D1D9">setup</text>
+<rect x="930.9" y="96" width="26.5" height="30" fill="#363D49"/>
+<rect x="959.4" y="96" width="15.1" height="30" fill="#2B313C"/>
+<rect x="976.5" y="96" width="146.2" height="30" fill="#363D49"/>
+<text x="986.5" y="116.04" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="14" fill="#C9D1D9">test</text>
+<rect x="1124.7" y="96" width="49.3" height="30" fill="#2B313C"/>
+<text x="1149.4" y="115.2" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="10" fill="#C9D1D9" text-anchor="middle">build</text>
+<text x="1188.0" y="116.04" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="16" font-weight="700" fill="#8B949E">40m</text>
+<text x="640" y="189.04" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="14" fill="#3FB950">after</text>
+<rect x="720" y="152" width="4.0" height="10" fill="#3FB950"/>
+<text x="756.8" y="161.76" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="13" fill="#C9D1D9">lint <tspan fill="#5A626E">0:05</tspan></text>
+<rect x="720" y="170" width="4.0" height="10" fill="#3FB950"/>
+<text x="756.8" y="179.76" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="13" fill="#C9D1D9">typecheck <tspan fill="#5A626E">0:05</tspan></text>
+<rect x="720" y="188" width="22.8" height="10" fill="#3FB950"/>
+<text x="756.8" y="197.76" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="13" fill="#C9D1D9">test <tspan fill="#5A626E">2:00</tspan></text>
+<rect x="720" y="206" width="11.4" height="10" fill="#3FB950"/>
+<text x="756.8" y="215.76" font-family="'JetBrains Mono', 'JetBrainsMono Nerd Font Mono', 'SF Mono', Menlo, monospace" font-size="13" fill="#C9D1D9">build <tspan fill="#5A626E">1:00</tspan></text>
+</svg>
