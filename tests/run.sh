@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# End-to-end proof in a throwaway Bun + TypeScript + Vitest repo, deleted on exit:
+# Runs tests/rules.sh first. Then end-to-end proof in a throwaway Bun + TypeScript + Vitest repo, deleted on exit:
 #   1. a first Claude Code session gets the hook message and runs fast-ci setup on its own
 #   2. setup wrote the workflow, lefthook.yml, the Git hook and .ci-baseline, and a second run changes nothing
 #   3. a push with a type error is blocked locally; a clean push goes through
@@ -8,6 +8,7 @@
 set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+bash "$here/tests/rules.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 pass() { echo "PASS $*"; }
@@ -48,6 +49,9 @@ done
 pass "setup: workflow, lefthook.yml, Git hook and marker present"
 echo "--- .ci-baseline"; cat .ci-baseline
 command -v actionlint >/dev/null && { actionlint .github/workflows/ci.yml && pass "actionlint: workflow is valid"; }
+grep -qF -- "--maxWorkers=50%" .github/workflows/ci.yml || fail "setup: workflow does not default Vitest to half the cores"
+bunx vitest run --maxWorkers=50% --passWithNoTests >/dev/null || fail "vitest: rejected --maxWorkers=50%"
+pass "setup: Vitest workers default to half the cores, and Vitest accepts it"
 
 before=$(git status --porcelain; cat .ci-baseline)
 bash "$here/setup.sh" >/dev/null

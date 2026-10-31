@@ -27,6 +27,15 @@ Ask before any change that raises cost or changes what the tests check:
 - Cost: paid runners (the commented `runs-on` lines), bigger machines, more shards, more scheduled runs. Owen Gretzinger's bill went from $230 to $4,300 a month from these.
 - Checks: deleting, skipping or quarantining tests, narrowing the affected-test selection, dropping an existing CI job or lint rule (replacing ESLint with Oxlint included).
 
+## Push and wait
+
+- When a fix lands low in a stack of PRs, rebase the stack locally and push only the top branch, then let CI run once. Never re-push every branch at once. That starts one run per branch, and the parallel runs overload the runners and cause new failures.
+- Do not subscribe an agent to PR or CI webhooks. Cancelled duplicate runs fire events too, so every event wakes the agent for nothing. Check CI status when the user asks, or wait on a single run with `gh run watch <id>`.
+
+## Raise parallelism
+
+Workers per runner (Vitest `--maxWorkers`, pytest-xdist `-n`) start at half the runner's cores, not all of them. When you raise test concurrency (workers or shards), run the suite 3 times at the new level before you call it done. If a timing-based test fails, lower the concurrency before you loosen a timeout. A level that passes every time beats a faster one that fails now and then. Record the setting you chose and why in a comment next to it.
+
 ## Audit a slow repo
 
 1. Pull the jobs of the last ~150 runs: `gh run list --limit 150 --json databaseId --jq '.[].databaseId' | xargs -I% gh api 'repos/{owner}/{repo}/actions/runs/%/jobs' --paginate`.
@@ -34,7 +43,7 @@ Ask before any change that raises cost or changes what the tests check:
 3. Find the critical path: the PR's slowest job sets its time.
 4. Rank fixes by measured seconds saved on the critical path, per PR. Look where the time usually hides:
    - Waiting: runner queue time. A 5-second job that waits 10 minutes for a machine is a 10-minute job. Faster runners cost money.
-   - Setup: cache misses on PR runs (no cache seeded from main), installs that a `node_modules` restore would replace, shallow or full clones where a blobless one fits, worker counts above the runner's cores.
+   - Setup: cache misses on PR runs (no cache seeded from main), installs that a `node_modules` restore would replace, shallow or full clones where a blobless one fits, worker counts above half the runner's cores.
    - Running: bigger machines before more shards, test files sharing a worker, extra work moved off the slowest job, affected-only tests.
 5. Apply the free fixes and measure again. Bring the paid ones and anything under "Needs the user's call" to the user with their measured saving and cost.
 

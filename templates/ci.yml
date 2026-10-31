@@ -142,8 +142,8 @@ jobs:
             scope="--changed=$BASE"
           fi
           code=$(grep -cE '\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|vue|svelte)$' <<<"$changed" || true)
-          # TODO(fast-ci): --maxWorkers, matched to the runner's cores.
-          __EXEC__ vitest run ${scope:+"$scope"} --shard="$SHARD/$TOTAL" --maxWorkers=2 --passWithNoTests \
+          # TODO(fast-ci): --maxWorkers. Half the runner's cores by default; raise it only per the skill's "Raise parallelism".
+          __EXEC__ vitest run ${scope:+"$scope"} --shard="$SHARD/$TOTAL" --maxWorkers=50% --passWithNoTests \
             --reporter=default --reporter=json --outputFile.json=vitest-report.json
           ran=$(jq '.numTotalTests // 0' vitest-report.json 2>/dev/null || echo 0)
           echo "$ran $code" > "tests-$SHARD.txt"
@@ -180,7 +180,7 @@ jobs:
       - *setup-uv
       - run: uv sync
       # shortcut: runs every test; add affected selection (pytest-testmon) once this job is the slowest.
-      # TODO(fast-ci): pytest-xdist `-n`, matched to the runner's cores.
+      # TODO(fast-ci): with pytest-xdist installed, add `-n $(( $(nproc) / 2 ))`, half the runner's cores.
       - run: uv run pytest
   # <<< py
 

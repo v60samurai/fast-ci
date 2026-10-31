@@ -52,7 +52,7 @@ The reply should quote `This repo has no .ci-baseline. ...`. If it says NONE, th
 bash tests/run.sh
 ```
 
-It builds a throwaway Bun + TypeScript + Vitest repo with a local bare remote and deletes it on exit. It checks that the first session gets the hook message and runs setup on its own, that setup writes the workflow, `lefthook.yml`, the Git hook and the marker, that a second setup run changes nothing, that a push with a type error is blocked locally, and that a second session gets no message. It needs `bun`, `claude`, `jq` and network access. `MODEL=haiku` makes it cheaper.
+It first runs `tests/rules.sh`, which checks without network that `SKILL.md` states each rollout rule and that the templates default test workers to half the runner's cores. Then it builds a throwaway Bun + TypeScript + Vitest repo with a local bare remote and deletes it on exit. It checks that the first session gets the hook message and runs setup on its own, that setup writes the workflow, `lefthook.yml`, the Git hook and the marker, that a second setup run changes nothing, that a push with a type error is blocked locally, and that a second session gets no message. It needs `bun`, `claude`, `jq` and network access. `MODEL=haiku` makes it cheaper.
 
 ## Values to tune
 
