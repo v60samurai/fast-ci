@@ -25,7 +25,7 @@ jobs:
   seed-cache:
     if: github.event_name == 'push'
     runs-on: &runner ubuntu-latest
-    # runs-on: &runner blacksmith-4vcpu-ubuntu-2204 # paid runner: Harshit's call
+    # runs-on: &runner blacksmith-4vcpu-ubuntu-2204 # paid runner: the user's call
     steps:
       - &checkout
         uses: actions/checkout@v5
@@ -114,7 +114,7 @@ jobs:
   test:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
-    # runs-on: blacksmith-8vcpu-ubuntu-2204 # bigger machines beat more shards; paid: Harshit's call
+    # runs-on: blacksmith-8vcpu-ubuntu-2204 # bigger machines beat more shards; paid: the user's call
     strategy:
       fail-fast: false
       matrix:

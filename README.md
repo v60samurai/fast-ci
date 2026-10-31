@@ -57,3 +57,7 @@ It builds a throwaway Bun + TypeScript + Vitest repo with a local bare remote an
 ## Values to tune
 
 The templates ship working defaults marked `TODO(fast-ci)`. Set them from measured runs: `grep -rn 'TODO(fast-ci)' templates/`.
+
+## License
+
+[MIT](LICENSE).

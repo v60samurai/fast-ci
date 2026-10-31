@@ -16,7 +16,7 @@ fail() { echo "FAIL $*"; exit 1; }
 # Claude Code with only this hook and this skill: user settings and skills stay out.
 printf '{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"bash %s/hooks/session-start.sh"}]}]}}\n' "$here" > "$tmp/settings.json"
 session() {
-  (cd "$tmp/app" && env -u HARSHIT_APPROVED claude -p "$1" --model "${MODEL:-sonnet}" --setting-sources project --settings "$tmp/settings.json" \
+  (cd "$tmp/app" && claude -p "$1" --model "${MODEL:-sonnet}" --setting-sources project --settings "$tmp/settings.json" \
     --include-hook-events --output-format stream-json --verbose \
     --allowedTools "Skill Bash Read Edit Write Glob Grep" --max-turns 40) > "$tmp/$2.jsonl"
   jq -r 'select(.type=="system" and .subtype=="hook_response" and .hook_event=="SessionStart") | .stdout' "$tmp/$2.jsonl"
