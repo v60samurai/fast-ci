@@ -35,10 +35,12 @@ jobs:
       # >>> js
       # >>> bun
       - &setup-js
+        id: js
         uses: oven-sh/setup-bun@v2
       # <<< bun
       # >>> node
       - &setup-js
+        id: js
         uses: actions/setup-node@v5
         with:
           node-version: lts/*
@@ -50,8 +52,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: node_modules
-          # TODO(fast-ci): cache key. Add every other input that changes node_modules (runtime version, patches/).
-          key: node-modules-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock', 'bun.lockb', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock') }}
+          # Everything install reads, and the runtime version itself: lts/* moves without any file changing.
+          # >>> bun
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-bun-${{ steps.js.outputs.bun-version }}-${{ hashFiles('bun.lock', 'bun.lockb', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'pnpm-workspace.yaml', '.npmrc', 'patches/**') }}
+          # <<< bun
+          # >>> node
+          key: node-modules-${{ runner.os }}-${{ runner.arch }}-node-${{ steps.js.outputs.node-version }}-${{ hashFiles('bun.lock', 'bun.lockb', 'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'pnpm-workspace.yaml', '.npmrc', 'patches/**') }}
+          # <<< node
       - &install
         if: steps.deps.outputs.cache-hit != 'true'
         run: __INSTALL__
@@ -118,7 +125,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4] # TODO(fast-ci): shard count, from measured runs
+        # 4 shards took BDM Meeting Insights from 504s to 206s at p50. A 2-vCPU runner is one physical core, so more
+        # runners is how to get more cores without paying for bigger machines.
+        shard: [1, 2, 3, 4]
     steps:
       - *checkout
       - *setup-js
@@ -134,15 +143,15 @@ jobs:
           TOTAL: ${{ strategy.job-total }}
         run: |
           changed=$( [ -n "$BASE" ] && git diff --name-only "$BASE" HEAD || true )
-          # Inputs the module graph cannot see force a full run.
-          # TODO(fast-ci): add this repo's other global inputs (env files, fixtures, codegen sources).
-          if [ -z "$BASE" ] || grep -qE '(^|/)(package\.json|bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|tsconfig[^/]*\.json|vite(st)?\.[^/]*)$|^\.github/' <<<"$changed"; then
+          # Inputs the module graph cannot see force a full run: install inputs, the runtime version, TS and Vite config,
+          # env files, CI config, and the shared test setup Vitest loads from config. Add files tests read with node:fs.
+          if [ -z "$BASE" ] || grep -qE '(^|/)(package\.json|bun\.lockb?|package-lock\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|yarn\.lock|\.npmrc|\.node-version|\.nvmrc|tsconfig[^/]*\.json|vite(st)?\.[^/]*|\.env[^/]*|setup(Tests)?\.[cm]?[jt]sx?|test-setup\.[cm]?[jt]sx?)$|^(\.github|patches)/' <<<"$changed"; then
             scope=""
           else
             scope="--changed=$BASE"
           fi
           code=$(grep -cE '\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|vue|svelte)$' <<<"$changed" || true)
-          # TODO(fast-ci): --maxWorkers. Half the runner's cores by default; raise it only per the skill's "Raise parallelism".
+          # Half the vCPUs is one worker per physical core. Two workers on a 2-vCPU runner made BDM's timing tests flaky.
           __EXEC__ vitest run ${scope:+"$scope"} --shard="$SHARD/$TOTAL" --maxWorkers=50% --passWithNoTests \
             --reporter=default --reporter=json --outputFile.json=vitest-report.json
           ran=$(jq '.numTotalTests // 0' vitest-report.json 2>/dev/null || echo 0)
@@ -180,7 +189,7 @@ jobs:
       - *setup-uv
       - run: uv sync
       # shortcut: runs every test; add affected selection (pytest-testmon) once this job is the slowest.
-      # TODO(fast-ci): with pytest-xdist installed, add `-n $(( $(nproc) / 2 ))`, half the runner's cores.
+      # With pytest-xdist installed, add `-n $(( $(nproc) / 2 ))`: one worker per physical core, as for Vitest.
       - run: uv run pytest
   # <<< py
 

@@ -56,7 +56,7 @@ It first runs `tests/rules.sh`, which checks without network that `SKILL.md` sta
 
 ## Values to tune
 
-The templates ship working defaults marked `TODO(fast-ci)`. Set them from measured runs: `grep -rn 'TODO(fast-ci)' templates/`.
+The template defaults (shard count, workers, the full-run list, the cache key) come from two measured rollouts. The Defaults section of `SKILL.md` gives the numbers behind each.
 
 ## License
 

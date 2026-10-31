@@ -16,9 +16,18 @@ Agents write every PR: they push, wait for CI, fix the red check and push again.
 4. Turn on every Oxlint category the code passes, in `.oxlintrc.json`. Strict rules cost an agent nothing.
 5. Point the `typecheck` script at the fastest checker the repo passes on, and switch whenever a faster one ships.
 6. In a Vitest repo, set `test.isolate: false` so test files share a worker. Add a `setupFiles` hook that resets shared state after every file (database rows, mocks, timers, module singletons), and write in `AGENTS.md` what a test must clean up.
-7. Leave each `TODO(fast-ci)` at its default. The user sets them from measured runs.
+7. Keep the defaults below. Add to the full-run list any file the tests read without importing it (fixtures, demo data, codegen sources).
 
-Setup is done when `.ci-baseline` exists, `.fast-ci-proposed/` is gone, `lefthook run pre-push --all-files` passes, and `actionlint` passes on the workflow. Report the `TODO(fast-ci)` lines left.
+Setup is done when `.ci-baseline` exists, `.fast-ci-proposed/` is gone, `lefthook run pre-push --all-files` passes, and `actionlint` passes on the workflow.
+
+## Defaults
+
+Each comes from a measured rollout. Change one only from this repo's own measured runs.
+
+- Shards: 4, because 4 shards took BDM Meeting Insights CI from 504s to 206s at p50, and a 2-vCPU runner is one physical core, so more runners is the free way to more cores.
+- Workers per runner: half the vCPUs, which is one per physical core, because 2 workers on BDM's 2-vCPU runner made timing tests flaky and one per core was the safe level on Listing QA (CI 45.4 to 13.3 min at p50).
+- Full test run: a change to a lockfile, `package.json`, `pnpm-workspace.yaml`, `.npmrc`, `.node-version`, `.nvmrc`, `tsconfig*.json`, Vite or Vitest config, `.env*`, `.github/`, `patches/` or the shared test setup runs every test, because Vitest's import graph cannot see those files.
+- `node_modules` cache key: OS, architecture, runtime version and a hash of the lockfiles, `pnpm-workspace.yaml`, `.npmrc` and `patches/`, so the cache misses exactly when an install would produce different files.
 
 ## Needs the user's call
 

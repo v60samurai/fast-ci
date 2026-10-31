@@ -26,3 +26,9 @@ grep -qE -- '--maxWorkers=[0-9]+([^0-9%]|$)' "$here/templates/ci.yml" && fail "t
 # shellcheck disable=SC2016 # the literal text, not an expansion
 has templates/ci.yml '-n $(( $(nproc) / 2 ))'
 pass "templates: Vitest and pytest-xdist default to half the cores"
+
+grep -rn 'TODO(fast-ci)' "$here/templates" "$here/SKILL.md" && fail "a TODO(fast-ci) default is left"
+has SKILL.md "504s to 206s"
+has templates/ci.yml "steps.js.outputs.node-version"
+has templates/ci.yml "steps.js.outputs.bun-version"
+pass "defaults: no TODO left, each backed by a measured rollout"
