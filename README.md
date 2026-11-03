@@ -57,6 +57,8 @@ bash tests/run.sh
 
 It first runs `tests/rules.sh`, which checks without network that `SKILL.md` and `playbook.md` state each rollout rule and guardrail and that the templates default test workers to half the runner's cores. Then it builds a throwaway Bun + TypeScript + Vitest repo with a local bare remote and deletes it on exit. It checks that the first session gets the hook message and runs setup on its own, that setup writes the workflow, `lefthook.yml`, the Git hook and the marker, that a second setup run changes nothing, that a push with a type error is blocked locally, and that a second session gets no message. It needs `bun`, `claude`, `jq` and network access. `MODEL=haiku` makes it cheaper.
 
+CI runs `tests/rules.sh`, ShellCheck and actionlint as parallel jobs on every PR and push to main. It skips `tests/run.sh`, which needs a Claude account. Run `lefthook install` once to get the same checks before every push.
+
 ## Values to tune
 
 The template defaults (shard count, workers, the full-run list, the cache key) come from two measured rollouts. The Defaults section of `SKILL.md` gives the numbers behind each.
