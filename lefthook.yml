@@ -1,0 +1,13 @@
+# Pre-push checks for fast-ci itself, in about a second. Install once with `lefthook install`.
+pre-push:
+  parallel: true
+  commands:
+    shellcheck:
+      glob: "*.sh"
+      run: shellcheck {push_files}
+    rules:
+      glob: "{SKILL.md,playbook.md,templates/*,tests/rules.sh}"
+      run: bash tests/rules.sh
+    actionlint:
+      glob: ".github/workflows/*.yml"
+      run: actionlint {push_files}

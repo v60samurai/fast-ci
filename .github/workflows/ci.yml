@@ -1,0 +1,40 @@
+# fast-ci's own CI. Every job runs in parallel; a PR takes as long as the slowest one.
+# tests/run.sh is not here: it drives a real Claude session and needs an account.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - &checkout
+        uses: actions/checkout@v5
+        with:
+          filter: blob:none # file contents on demand, so the banner PNGs download only when read
+      - run: bash tests/rules.sh
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - *checkout
+      - run: shellcheck setup.sh hooks/*.sh tests/*.sh # preinstalled on ubuntu-latest
+
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - *checkout
+      - name: Install actionlint 1.7.12
+        run: bash <(curl -sSfL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+      - run: ./actionlint -color
