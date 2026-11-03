@@ -13,4 +13,4 @@ elif [ -f lefthook.yml ] && [ ! -f "$(git rev-parse --git-path hooks/pre-push)" 
 else
   exit 0
 fi
-echo "This repo $why. Before any other work, use the fast-ci skill to run its setup."
+echo "This repo $why. Before any other work, use the fast-ci skill to run its Baseline steps."

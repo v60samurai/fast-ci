@@ -2,7 +2,10 @@
 
 # fast-ci
 
-A Claude Code skill that gives every repo fast CI and a pre-push hook by default. A SessionStart hook checks for a `.ci-baseline` file at the repo root. When it is missing, the hook tells the agent to run fast-ci setup before any other work, so a new repo, or the next session in an old one, gets the baseline without anyone asking.
+A Claude Code skill with two jobs.
+
+- **Baseline.** Every repo gets fast CI and a pre-push hook by default. A SessionStart hook checks for a `.ci-baseline` file at the repo root. When it is missing, the hook tells the agent to run the Baseline steps before any other work, so a new repo, or the next session in an old one, gets the baseline without anyone asking.
+- **Speedup.** Say "make this repo's CI fast af" and the agent works alone to the end. It audits the last 150 CI runs, ranks the fixes in [`playbook.md`](playbook.md) by seconds saved, and lands them one PR at a time. Each PR has to go green and measurably faster before it merges, and a merge that turns the default branch red is reverted. It never moves to paid runners, weakens a test or check, or touches other people's branches. It ends with one report: before and after times per job, each merged PR, what it skipped, and what paid runners would save and cost.
 
 The techniques come from Owen Gretzinger (head of engineering at Boardy), who took CI from 40 minutes to 2 per PR. Coding agents now write every PR and wait on CI after every push, so CI time is the length of their loop.
 
@@ -12,7 +15,7 @@ The techniques come from Owen Gretzinger (head of engineering at Boardy), who to
 - `lefthook.yml`. A pre-push hook that runs format, lint and typecheck on the pushed files: Oxfmt, Oxlint and `tsc` for TS/JS, and Ruff and ty for Python.
 - `.ci-baseline`. The skill version, the date and the detected stack.
 
-[`SKILL.md`](SKILL.md) holds the setup steps, the changes that need your approval, and the audit for a repo whose CI is already slow. When CI or a hook already exists, `setup.sh` leaves it alone, prints a diff and writes its proposal to `.fast-ci-proposed/` for the agent to merge.
+[`SKILL.md`](SKILL.md) holds both sets of steps, the guardrails and the measured defaults. When CI or a hook already exists, `setup.sh` leaves it alone, prints a diff and writes its proposal to `.fast-ci-proposed/` for the agent to merge.
 
 ## Install on a new machine
 
@@ -52,7 +55,7 @@ The reply should quote `This repo has no .ci-baseline. ...`. If it says NONE, th
 bash tests/run.sh
 ```
 
-It first runs `tests/rules.sh`, which checks without network that `SKILL.md` states each rollout rule and that the templates default test workers to half the runner's cores. Then it builds a throwaway Bun + TypeScript + Vitest repo with a local bare remote and deletes it on exit. It checks that the first session gets the hook message and runs setup on its own, that setup writes the workflow, `lefthook.yml`, the Git hook and the marker, that a second setup run changes nothing, that a push with a type error is blocked locally, and that a second session gets no message. It needs `bun`, `claude`, `jq` and network access. `MODEL=haiku` makes it cheaper.
+It first runs `tests/rules.sh`, which checks without network that `SKILL.md` and `playbook.md` state each rollout rule and guardrail and that the templates default test workers to half the runner's cores. Then it builds a throwaway Bun + TypeScript + Vitest repo with a local bare remote and deletes it on exit. It checks that the first session gets the hook message and runs setup on its own, that setup writes the workflow, `lefthook.yml`, the Git hook and the marker, that a second setup run changes nothing, that a push with a type error is blocked locally, and that a second session gets no message. It needs `bun`, `claude`, `jq` and network access. `MODEL=haiku` makes it cheaper.
 
 ## Values to tune
 
