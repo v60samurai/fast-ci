@@ -35,6 +35,10 @@ for item in "a. Seed the cache" "b. Blobless clone" "c. Fastest linter" "d. Fast
 has playbook.md "confirm the run fails"
 pass "playbook: every item a to k, and the skip logic is tested"
 
+# Claude Code replaces $0, $1, ... in a skill body with the invocation's words, so "$4,300" became "af,300".
+grep -nE '\$[0-9]' "$here/SKILL.md" && fail "SKILL.md: a dollar sign before a digit is replaced by a skill argument"
+pass "skill: no text that skill arguments can replace"
+
 has templates/ci.yml "--maxWorkers=50%"
 grep -qE -- '--maxWorkers=[0-9]+([^0-9%]|$)' "$here/templates/ci.yml" && fail "templates/ci.yml: a fixed --maxWorkers count is left"
 # shellcheck disable=SC2016 # the literal text, not an expansion
