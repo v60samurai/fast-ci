@@ -5,9 +5,10 @@
 A Claude Code skill with two jobs.
 
 - **Baseline.** Every repo gets fast CI and a pre-push hook by default. A SessionStart hook checks for a `.ci-baseline` file at the repo root. When it is missing, the hook tells the agent to run the Baseline steps before any other work, so a new repo, or the next session in an old one, gets the baseline without anyone asking.
-- **Speedup.** Say "make this repo's CI fast af" and the agent works alone to the end. It audits the last 150 CI runs, ranks the fixes in [`playbook.md`](playbook.md) by seconds saved, and lands them one PR at a time. Each PR has to go green and measurably faster before it merges, and a merge that turns the default branch red is reverted. It never moves to paid runners, weakens a test or check, or touches other people's branches. It ends with one report: before and after times per job, each merged PR, what it skipped, and what paid runners would save and cost.
+- **Speedup.** Say "make this repo's CI fast af" and the agent works alone to the end. `audit.py` measures the last 150 CI runs, the agent ranks the matching techniques in [`playbook.md`](playbook.md) by minutes saved per day, and it lands them one PR at a time. Each PR has to go green and measurably faster before it merges, and a merge that turns the default branch red is reverted. It never moves to paid runners, weakens a test or check, or touches other people's branches. It ends with one report: before and after times per job, each merged PR, what it skipped, and what paid runners would save and cost.
+- **Refresh.** Say "refresh fast-ci playbook" and the agent diffs StarSling's site against [`research/starsling-index.md`](research/starsling-index.md) and adds any new technique to the catalog.
 
-The techniques come from Owen Gretzinger (head of engineering at Boardy), who took CI from 40 minutes to 2 per PR. Coding agents now write every PR and wait on CI after every push, so CI time is the length of their loop.
+The catalog has 142 techniques in 8 bottleneck files. 141 come from StarSling's CI playbooks (https://starsling.dev/ci-playbooks), which collect what Anthropic, DoorDash, Linear, Mastra, OpenAI, Ramp, Shopify, Spotify, Stripe and Uber changed, each backed by merged PRs. Their open source [ci-speedup](https://github.com/starslingdev/skills) skill shaped the audit: measure only the current workflow config, read a setting's history before changing it, and prove the same tests still run after a change. The method and the first playbook come from Owen Gretzinger (head of engineering at Boardy), who took CI from 40 minutes to 2 per PR. Coding agents now write every PR and wait on CI after every push, so CI time is the length of their loop.
 
 ## What a repo gets
 
@@ -15,7 +16,7 @@ The techniques come from Owen Gretzinger (head of engineering at Boardy), who to
 - `lefthook.yml`. A pre-push hook that runs format, lint and typecheck on the pushed files: Oxfmt, Oxlint and `tsc` for TS/JS, and Ruff and ty for Python.
 - `.ci-baseline`. The skill version, the date and the detected stack.
 
-[`SKILL.md`](SKILL.md) holds both sets of steps, the guardrails and the measured defaults. When CI or a hook already exists, `setup.sh` leaves it alone, prints a diff and writes its proposal to `.fast-ci-proposed/` for the agent to merge.
+[`SKILL.md`](SKILL.md) holds the Baseline, Speedup and Refresh steps, the guardrails and the measured defaults. When CI or a hook already exists, `setup.sh` leaves it alone, prints a diff and writes its proposal to `.fast-ci-proposed/` for the agent to merge.
 
 ## Install on a new machine
 

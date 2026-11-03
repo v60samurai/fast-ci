@@ -5,7 +5,7 @@
 # Exit 2: nothing to detect yet (no package.json or pyproject.toml at the repo root).
 set -euo pipefail
 
-VERSION=2.0.0
+VERSION=3.0.0
 skill=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 root=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "fast-ci: not inside a Git repository" >&2; exit 1; }
 cd "$root"

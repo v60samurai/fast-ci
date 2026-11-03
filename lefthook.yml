@@ -6,7 +6,7 @@ pre-push:
       glob: "*.sh"
       run: shellcheck {push_files}
     rules:
-      glob: "{SKILL.md,playbook.md,templates/*,tests/rules.sh}"
+      glob: "{SKILL.md,README.md,playbook.md,playbook/*,research/*,templates/*,tests/*,audit.py}"
       run: bash tests/rules.sh
     actionlint:
       glob: ".github/workflows/*.yml"

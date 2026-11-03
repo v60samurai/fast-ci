@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Static checks, no network: SKILL.md and playbook.md state each rollout rule, and the templates default
+# Static checks, no network: SKILL.md states each rule and guardrail, the playbook catalog is complete, and the templates default
 # test concurrency to half the runner's cores.
 set -euo pipefail
 
@@ -22,18 +22,61 @@ has SKILL.md 'gh run watch <id>'
 pass "skill: agents do not watch CI events"
 
 has SKILL.md "Invoking this branch is the user's approval"
-has SKILL.md "Never switch to paid runners"
+has SKILL.md "Never switch to paid, bigger or faster runners"
 has SKILL.md "Never remove, skip or weaken a test or a required check"
 has SKILL.md "Never force-push the default branch"
 has SKILL.md "revert the merge at once"
 has SKILL.md "fast af"
 pass "skill: Speedup runs alone inside its guardrails and ends on the numbers"
 
-for item in "a. Seed the cache" "b. Blobless clone" "c. Fastest linter" "d. Fastest typechecker" "e. Test files share a worker" \
-  "f. More cores before more shards" "g. Match concurrency to cores" "h. Everything in parallel" "i. Only run what a PR touches" \
-  "j. Checks before every push" "k. Keep every test"; do has playbook.md "## $item"; done
-has playbook.md "confirm the run fails"
-pass "playbook: every item a to k, and the skip logic is tested"
+has SKILL.md "Never land a report-only entry"
+has SKILL.md "Every job keeps a \`timeout-minutes\`"
+has SKILL.md "Agent CI rounds are bounded"
+has SKILL.md "Rerun a failed job only for an infrastructure failure"
+has SKILL.md "minutes saved per day"
+has SKILL.md "## Refresh"
+pass "skill: guardrails for timeouts, agent rounds, retries and report-only entries"
+
+# The catalog: every entry complete, every report-only entry locked, every StarSling technique present.
+python3 -I - "$here" <<'PY' || fail "playbook catalog"
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+fields = ["applies when", "how", "estimate", "verify", "risk", "mode", "evidence"]
+reasons = {"paid-runner", "after-merge", "merge-gate", "weakens-check", "agent-workflow", "needs-infra"}
+cats = re.findall(r"\(playbook/([a-z-]+)\.md\)", (root / "playbook.md").read_text())
+bad, modes = [], {}
+assert len(set(cats)) == 8, f"playbook.md links {len(set(cats))} category files, want 8"
+for cat in sorted(set(cats)):
+    for e in re.split(r"(?m)^### ", (root / "playbook" / f"{cat}.md").read_text())[1:]:
+        m = re.match(r"([a-z0-9-]+): \S", e)
+        if not m:
+            bad.append(f"{cat}: heading {e.splitlines()[0]!r}"); continue
+        i = m.group(1)
+        if i in modes: bad.append(f"{i}: duplicate id")
+        if re.findall(r"(?m)^- \*\*([a-z ]+):\*\*", e) != fields: bad.append(f"{i}: fields not exactly {fields}")
+        v = dict(re.findall(r"(?m)^- \*\*([a-z ]+):\*\* (.*)$", e))
+        if v.get("risk") not in ("low", "medium", "high"): bad.append(f"{i}: risk {v.get('risk')!r}")
+        mode = v.get("mode", "")
+        r = re.fullmatch(r"report-only \(([a-z-]+)\)", mode)
+        if mode != "auto" and not (r and r.group(1) in reasons): bad.append(f"{i}: mode {mode!r}")
+        if "`" not in v.get("applies when", ""): bad.append(f"{i}: applies when names no signal")
+        if "starsling.dev" not in v.get("evidence", "") and not i.startswith("fc-"): bad.append(f"{i}: no StarSling evidence")
+        modes[i] = "auto" if mode == "auto" else "report-only"
+locked = {l.strip() for l in (root / "tests/report-only.txt").read_text().splitlines() if l.strip() and not l.startswith("#")}
+bad += [f"{i}: locked report-only but {modes.get(i, 'missing')}" for i in sorted(locked) if modes.get(i) != "report-only"]
+bad += [f"{i}: report-only but not in tests/report-only.txt" for i, m in sorted(modes.items()) if m == "report-only" and i not in locked]
+index = set(re.findall(r"(?m)^### ([a-z0-9-]+)$", (root / "research/starsling-index.md").read_text()))
+bad += [f"{i}: in the StarSling index but not the catalog" for i in sorted(index - set(modes))]
+print("\n".join(bad)); sys.exit(1 if bad else 0)
+PY
+pass "playbook: every entry has every field, report-only entries stay report-only, every StarSling technique is in"
+
+grep -n '—' "$here/SKILL.md" "$here/playbook.md" "$here"/playbook/*.md "$here/README.md" && fail "an em dash is left"
+python3 -I -c 'import ast, sys; ast.parse(open(sys.argv[1]).read())' "$here/audit.py" || fail "audit.py does not parse"
+pass "docs: no em dashes; audit.py parses"
+
+python3 -I "$here/tests/audit_test.py" | grep -c '^PASS audit.py' | grep -qx 2 || fail "tests/audit_test.py"
+pass "audit.py: signal rules hold on fixture data"
 
 # Claude Code replaces $0, $1, ... in a skill body with the invocation's words, so "$4,300" became "af,300".
 grep -nE '\$[0-9]' "$here/SKILL.md" && fail "SKILL.md: a dollar sign before a digit is replaced by a skill argument"
