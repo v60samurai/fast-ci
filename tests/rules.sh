@@ -21,11 +21,14 @@ has SKILL.md "Do not subscribe an agent to PR or CI webhooks"
 has SKILL.md 'gh run watch <id>'
 pass "skill: agents do not watch CI events"
 
-has SKILL.md "Invoking this branch is the user's approval"
+has SKILL.md "Approving the Speedup's PR plan (step 5) is the user's approval"
+has SKILL.md "A merge needs the user's word"
+has SKILL.md "at most 3 PRs per approved plan"
+has SKILL.md "Never open a PR to probe or experiment"
 has SKILL.md "Never switch to paid, bigger or faster runners"
 has SKILL.md "Never remove, skip or weaken a test or a required check"
 has SKILL.md "Never force-push the default branch"
-has SKILL.md "revert the merge at once"
+has SKILL.md "reverts the merge at once"
 has SKILL.md "fast af"
 pass "skill: Speedup runs alone inside its guardrails and ends on the numbers"
 
